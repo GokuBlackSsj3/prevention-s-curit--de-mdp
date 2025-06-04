@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prévention Sécurité des Mots de Passe</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header>
+        <h1>Prévention Sécurité des Mots de Passe</h1>
+        <p>Testez vos connaissances sur les bonnes pratiques de sécurité des mots de passe</p>
+    </header>
+    <main>
+        <div id="start-container">
+            <label for="username-input">Entrez votre nom :</label>
+            <input type="text" id="username-input" placeholder="Votre nom" />
+            <button id="start-btn" class="btn">Commencer le quiz</button>
+        </div>
+        <div id="quiz-container" class="hide">
+        <div id="question-container">
+            <div id="question">Question text</div>
+            <div id="ai-chat" class="chat-container hide">
+                <div id="chat-messages" class="chat-messages"></div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Posez une question à l'IA..." />
+                    <button id="chat-btn" class="btn chat-btn">Envoyer</button>
+                </div>
+            </div>
+            <button id="ai-toggle" class="btn ai-btn">Demander de l'aide à l'IA</button>
+            <div id="answer-buttons" class="btn-grid"></div>
+        </div>
+        <div id="controls">
+            <button id="next-btn" class="btn">Question Suivante</button>
+        </div>
+        <div id="result-container" class="hide">
+            <h2>Résultats</h2>
+            <p id="score"></p>
+            <button id="restart-btn" class="btn">Recommencer</button>
+        </div>
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
