@@ -332,14 +332,61 @@ window.addEventListener('click', (e) => {
 // Direct Survey Form functionality
 document.addEventListener('DOMContentLoaded', function() {
     const directSurveyForm = document.getElementById('direct-survey-form');
+    const directSubmitBtn = document.getElementById('direct-submit-btn');
     const formScore = document.getElementById('form-score');
     const formName = document.getElementById('form-name');
 
     if (directSurveyForm) {
-        directSurveyForm.addEventListener('submit', function() {
-            // Update hidden fields before form submission
+        directSurveyForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const message = document.getElementById('direct-message').value.trim();
+            
+            if (!message) {
+                alert('Veuillez écrire un commentaire');
+                return;
+            }
+            
+            // Update hidden fields
             formScore.value = `${score}/${questions.length}`;
             formName.value = username || 'Utilisateur anonyme';
+            
+            // Disable submit button
+            directSubmitBtn.disabled = true;
+            directSubmitBtn.textContent = 'Envoi en cours...';
+            
+            try {
+                // Create form data for FormSubmit AJAX
+                const formData = new FormData();
+                formData.append('_subject', 'Nouveau feedback sur le quiz de sécurité');
+                formData.append('name', username || 'Utilisateur anonyme');
+                formData.append('message', message);
+                formData.append('score', `${score}/${questions.length}`);
+                formData.append('timestamp', new Date().toLocaleString('fr-FR'));
+                
+                const response = await fetch('https://formsubmit.co/ajax/collectenquetes@gmail.com', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert('Votre avis a été envoyé avec succès! Merci pour votre participation.');
+                    directSurveyForm.reset();
+                } else {
+                    throw new Error(result.message || 'Erreur lors de l\'envoi');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Erreur lors de l\'envoi. Veuillez réessayer.');
+            } finally {
+                directSubmitBtn.disabled = false;
+                directSubmitBtn.textContent = 'Envoyer mon avis';
+            }
         });
     }
 });
