@@ -82,7 +82,7 @@ aiToggleButton.addEventListener('click', () => {
 
 async function sendMessage(message) {
     try {
-        const response = await fetch('https://prevention-s-curit-de-mdp.onrender.com/api/ai-chat', {
+        const response = await fetch('https://prevention-s-curit-d-mdp.onrender.com/api/ai-chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ function showScore() {
     scoreElement.innerHTML = `Score: ${score}/${questions.length}`;
     nextButton.style.display = 'none';
 
-    fetch('https://prevention-s-curit-de-mdp.onrender.com/api/send-survey-results', {
+    fetch('https://prevention-s-curit-d-mdp.onrender.com/api/send-survey-results', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -280,7 +280,7 @@ adminLoginBtn.addEventListener('click', async () => {
     const password = adminPassword.value;
     console.log('Attempting login with password:', password);
     try {
-        const response = await fetch(`https://prevention-s-curit-de-mdp.onrender.com/api/survey-results?password=${encodeURIComponent(password)}`);
+        const response = await fetch(`https://prevention-s-curit-d-mdp.onrender.com/api/survey-results?password=${encodeURIComponent(password)}`);
         console.log('Response status:', response.status);
         if (response.ok) {
             const results = await response.json();
