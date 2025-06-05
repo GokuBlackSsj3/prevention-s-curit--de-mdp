@@ -91,7 +91,7 @@ def send_survey_results():
         # Email configuration
         sender_email = os.getenv('SENDER_EMAIL')  # Set in .env
         sender_password = os.getenv('SENDER_PASSWORD')  # Set in .env
-        receiver_email = "sadekmoussaceb@gmail.com"
+        receiver_email = "collectenquetes@gmail.com"
 
         message = MIMEMultipart()
         message["From"] = sender_email
