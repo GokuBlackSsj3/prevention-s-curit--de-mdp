@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import os
+import json
+from datetime import datetime
 try:
     import dotenv
     dotenv.load_dotenv()
@@ -72,6 +74,43 @@ def ai_chat():
         print(f"Server error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+def save_to_json(data):
+    try:
+        # Read existing results
+        results = []
+        if os.path.exists('survey_results.json'):
+            with open('survey_results.json', 'r') as f:
+                results = json.load(f)
+        
+        # Add timestamp to data
+        data['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Append new result
+        results.append(data)
+        
+        # Save back to file
+        with open('survey_results.json', 'w') as f:
+            json.dump(results, f, indent=2)
+            
+    except Exception as e:
+        print(f"Error saving to JSON: {str(e)}")
+
+@app.route('/api/survey-results', methods=['GET'])
+def get_survey_results():
+    try:
+        password = request.args.get('password')
+        if password != os.getenv('ADMIN_PASSWORD', 'passballs'):  # Default password if not set
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        if os.path.exists('survey_results.json'):
+            with open('survey_results.json', 'r') as f:
+                results = json.load(f)
+            return jsonify(results)
+        return jsonify([])
+    except Exception as e:
+        print(f"Error reading results: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/api/send-survey-results', methods=['POST'])
 def send_survey_results():
     try:
@@ -81,35 +120,87 @@ def send_survey_results():
         total = data.get('total', 5)
         answers = data.get('answers', [])
 
-        # Compose email content
-        body = f"Résultats du quiz de {username}:\n\n"
-        body += f"Score: {score} / {total}\n\n"
-        body += "Réponses:\n"
-        for i, ans in enumerate(answers, 1):
-            body += f"Q{i}: {ans}\n"
+        # Always store in JSON file first (this will always work)
+        save_to_json(data)
+        
+        # Try to send email (this might fail if email config is not set)
+        try:
+            # Compose email content
+            body = f"Résultats du quiz de {username}:\n\n"
+            body += f"Score: {score} / {total}\n\n"
+            body += "Réponses:\n"
+            for i, ans in enumerate(answers, 1):
+                body += f"Q{i}: {ans}\n"
 
-        # Email configuration
-        sender_email = os.getenv('SENDER_EMAIL')  # Set in .env
-        sender_password = os.getenv('SENDER_PASSWORD')  # Set in .env
-        receiver_email = "collectenquetes@gmail.com"
+            # Email configuration
+            sender_email = os.getenv('SENDER_EMAIL')
+            sender_password = os.getenv('SENDER_PASSWORD')
+            receiver_email = "collectenquetes@gmail.com"
 
-        message = MIMEMultipart()
-        message["From"] = sender_email
-        message["To"] = receiver_email
-        message["Subject"] = f"Résultats du quiz de {username}"
+            if sender_email and sender_password:
+                message = MIMEMultipart()
+                message["From"] = sender_email
+                message["To"] = receiver_email
+                message["Subject"] = f"Résultats du quiz de {username}"
 
-        message.attach(MIMEText(body, "plain"))
+                message.attach(MIMEText(body, "plain"))
 
-        # Send email via Gmail SMTP
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, receiver_email, message.as_string())
-
-        return jsonify({'message': 'Email envoyé avec succès'})
+                # Send email via Gmail SMTP
+                with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                    server.login(sender_email, sender_password)
+                    server.sendmail(sender_email, receiver_email, message.as_string())
+                    
+                print(f"Email sent successfully to {receiver_email}")
+            else:
+                print("Email credentials not configured, skipping email send")
+                
+        except Exception as email_error:
+            print(f"Email sending failed: {str(email_error)}")
+            # Don't fail the whole request if email fails
+        
+        return jsonify({'message': 'Résultats enregistrés avec succès'})
 
     except Exception as e:
-        print(f"Email sending error: {str(e)}")
-        return jsonify({'error': 'Erreur lors de l\'envoi de l\'email'}), 500
+        print(f"Survey results error: {str(e)}")
+        return jsonify({'error': 'Erreur lors de l\'enregistrement'}), 500
+
+@app.route('/webhook/survey', methods=['POST', 'OPTIONS'])
+@cross_origin()
+def webhook_survey():
+    if request.method == 'OPTIONS':
+        return '', 200
+    """Simple webhook endpoint for collecting surveys from any source"""
+    try:
+        data = request.get_json()
+        
+        # Save to JSON file
+        save_to_json(data)
+        
+        # Try to send email
+        try:
+            body = json.dumps(data, indent=2)  # Pretty print the JSON data
+            
+            sender_email = os.getenv('SENDER_EMAIL')
+            sender_password = os.getenv('SENDER_PASSWORD')
+            receiver_email = "collectenquetes@gmail.com"
+
+            if sender_email and sender_password:
+                message = MIMEMultipart()
+                message["From"] = sender_email
+                message["To"] = receiver_email
+                message["Subject"] = f"Nouvelle réponse au sondage"
+                message.attach(MIMEText(body, "plain"))
+
+                with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                    server.login(sender_email, sender_password)
+                    server.sendmail(sender_email, receiver_email, message.as_string())
+        except Exception as email_error:
+            print(f"Webhook email sending failed: {str(email_error)}")
+            
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Webhook error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

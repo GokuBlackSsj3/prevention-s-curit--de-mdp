@@ -12,6 +12,9 @@
         <p>Testez vos connaissances sur les bonnes pratiques de sécurité des mots de passe</p>
     </header>
     <main>
+        <div id="admin-link">
+            <button id="view-results-btn" class="btn admin-btn">Voir les résultats</button>
+        </div>
         <div id="start-container">
             <label for="username-input">Entrez votre nom :</label>
             <input type="text" id="username-input" placeholder="Votre nom" />
@@ -36,10 +39,41 @@
         <div id="result-container" class="hide">
             <h2>Résultats</h2>
             <p id="score"></p>
-            <button id="restart-btn" class="btn">Recommencer</button>
+            
+            <!-- Direct Survey Submit Form -->
+            <div id="direct-submit-container" class="survey-form">
+                <h3>Partagez votre avis sur la sécurité des mots de passe</h3>
+                <form id="direct-survey-form" action="https://formsubmit.co/ajax/collectenquetes@gmail.com" method="POST">
+                    <input type="hidden" name="_subject" value="Nouveau feedback sur le quiz de sécurité">
+                    <input type="hidden" name="_next" value="https://prevention-s-curit-d-mdp.onrender.com/thanks.html">
+                    <input type="hidden" name="score" id="form-score">
+                    <input type="hidden" name="name" id="form-name">
+                    <div class="form-group">
+                        <label for="direct-message">Votre commentaire :</label>
+                        <textarea id="direct-message" name="message" placeholder="Partagez votre expérience et vos conseils sur la sécurité des mots de passe..." rows="4" required></textarea>
+                    </div>
+                    <button type="submit" id="direct-submit-btn" class="btn submit-btn">Envoyer mon avis</button>
+                </form>
+            </div>
+            
+            <button id="restart-btn" class="btn restart-btn">Recommencer le quiz</button>
         </div>
         </div>
     </main>
+    <div id="admin-modal" class="modal hide">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Accès administrateur</h2>
+            <div class="admin-login">
+                <input type="password" id="admin-password" placeholder="Mot de passe admin" />
+                <button id="admin-login-btn" class="btn">Connexion</button>
+            </div>
+            <div id="results-container" class="hide">
+                <h3>Résultats des sondages</h3>
+                <div id="results-list"></div>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>

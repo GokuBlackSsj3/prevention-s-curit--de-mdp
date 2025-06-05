@@ -54,6 +54,7 @@ const questions = [
 let currentQuestionIndex = 0;
 let score = 0;
 let username = '';
+let userAnswers = [];
 
 // Get DOM elements
 const startContainer = document.getElementById('start-container');
@@ -152,6 +153,7 @@ startButton.addEventListener('click', () => {
 function startQuiz() {
     currentQuestionIndex = 0;
     score = 0;
+    userAnswers = []; // Reset user answers
     nextButton.innerHTML = 'Question Suivante';
     showQuestion();
 }
@@ -185,6 +187,10 @@ function resetState() {
 function selectAnswer(e) {
     const selectedButton = e.target;
     const correct = selectedButton.dataset.correct === 'true';
+    
+    // Store the user's actual answer
+    userAnswers[currentQuestionIndex] = selectedButton.innerHTML;
+    
     if (correct) {
         score++;
     }
@@ -214,18 +220,6 @@ function showScore() {
     scoreElement.innerHTML = `Score: ${score}/${questions.length}`;
     nextButton.style.display = 'none';
 
-    // Send survey results to backend
-    const answers = questions.map(q => {
-        // Find the selected answer text for each question
-        const buttons = answerButtonsElement.querySelectorAll('button');
-        for (const btn of buttons) {
-            if (btn.dataset.correct === 'true') {
-                return btn.innerText;
-            }
-        }
-        return '';
-    });
-
     fetch('https://prevention-s-curit-de-mdp.onrender.com/api/send-survey-results', {
         method: 'POST',
         headers: {
@@ -235,7 +229,7 @@ function showScore() {
             username: username,
             score: score,
             total: questions.length,
-            answers: answers
+            answers: userAnswers
         })
     })
     .then(response => response.json())
@@ -261,4 +255,91 @@ restartButton.addEventListener('click', () => {
     quizContainer.classList.add('hide');
     startContainer.classList.remove('hide');
     usernameInput.value = '';
+});
+
+// Admin functionality
+const viewResultsBtn = document.getElementById('view-results-btn');
+const adminModal = document.getElementById('admin-modal');
+const adminPassword = document.getElementById('admin-password');
+const adminLoginBtn = document.getElementById('admin-login-btn');
+const resultsContainer = document.getElementById('results-container');
+const resultsList = document.getElementById('results-list');
+const closeBtn = document.querySelector('.close');
+
+viewResultsBtn.addEventListener('click', () => {
+    adminModal.classList.remove('hide');
+    adminPassword.value = '';
+    resultsContainer.classList.add('hide');
+});
+
+closeBtn.addEventListener('click', () => {
+    adminModal.classList.add('hide');
+});
+
+adminLoginBtn.addEventListener('click', async () => {
+    const password = adminPassword.value;
+    console.log('Attempting login with password:', password);
+    try {
+        const response = await fetch(`https://prevention-s-curit-de-mdp.onrender.com/api/survey-results?password=${encodeURIComponent(password)}`);
+        console.log('Response status:', response.status);
+        if (response.ok) {
+            const results = await response.json();
+            console.log('Results received:', results);
+            displayResults(results);
+            adminPassword.value = '';
+        } else {
+            const errorData = await response.json();
+            console.log('Error response:', errorData);
+            alert('Mot de passe incorrect');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Erreur lors de la récupération des résultats');
+    }
+});
+
+function displayResults(results) {
+    resultsList.innerHTML = '';
+    results.forEach(result => {
+        const resultDiv = document.createElement('div');
+        resultDiv.classList.add('result-item');
+        
+        const content = `
+            <h4>${result.username} - ${result.timestamp || 'Date inconnue'}</h4>
+            <div class="result-details">
+                <p>Score: ${result.score}/${result.total}</p>
+                <p>Réponses:</p>
+                <ul>
+                    ${result.answers.map((ans, i) => `<li>Q${i + 1}: ${ans}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+        
+        resultDiv.innerHTML = content;
+        resultsList.appendChild(resultDiv);
+    });
+    
+    resultsContainer.classList.remove('hide');
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', (e) => {
+    if (e.target === adminModal) {
+        adminModal.classList.add('hide');
+    }
+});
+
+// Direct Survey Form functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const directSurveyForm = document.getElementById('direct-survey-form');
+    const formScore = document.getElementById('form-score');
+    const formName = document.getElementById('form-name');
+
+    if (directSurveyForm) {
+        directSurveyForm.addEventListener('submit', function() {
+            // Update hidden fields before form submission
+            formScore.value = `${score}/${questions.length}`;
+            formName.value = username || 'Utilisateur anonyme';
+        });
+    }
 });
